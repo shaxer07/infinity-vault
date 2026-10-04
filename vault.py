@@ -12,7 +12,7 @@ AI Vault v2 — приватна комірка пам'яті для ШІ-аге
      прочитати без 3 частин ключа — теж).
 
 Команди:
-  init | write "текст" | read | mirror [шлях...] | chain | status
+  init | write "текст" | read | mirror [шлях...] | push | chain | status
 """
 
 import os
@@ -203,6 +203,7 @@ def cmd_write(text):
     made = mirror()
     print(f"OK: записано. Всього записів: {len(entries)}")
     print(f"OK: дублювання: {len(made)} копій комірки оновлено")
+    cmd_push()
 
 
 def cmd_read():
@@ -220,6 +221,18 @@ def cmd_mirror():
     print(f"OK: комірку продубльовано в {len(made)} місць:")
     for m in made:
         print(f"  {m}")
+
+
+def cmd_push():
+    import subprocess
+    subprocess.run(["git", "add", "-A"], cwd=BASE, capture_output=True, text=True)
+    subprocess.run(["git", "commit", "-q", "-m", f"write @ {int(time.time())}"],
+                   cwd=BASE, capture_output=True, text=True)
+    r = subprocess.run(["git", "push", "-q"], cwd=BASE, capture_output=True, text=True)
+    if r.returncode == 0:
+        print("OK: комірку залито на GitHub")
+    else:
+        print(f"⚠️ push не вдався: {r.stderr.strip()[:200]}")
 
 
 def cmd_chain():
@@ -254,7 +267,7 @@ def cmd_status():
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print('Команди: init | write "текст" | read | mirror [шлях...] | chain | status')
+        print('Команди: init | write "текст" | read | mirror [шлях...] | push | chain | status')
         sys.exit(1)
     cmd = sys.argv[1]
     if cmd == "init":
@@ -268,9 +281,11 @@ if __name__ == "__main__":
         cmd_read()
     elif cmd == "mirror":
         cmd_mirror()
+    elif cmd == "push":
+        cmd_push()
     elif cmd == "chain":
         cmd_chain()
     elif cmd == "status":
         cmd_status()
     else:
-        print("Невідома команда. Можна: init / write / read / mirror / chain / status")
+        print("Невідома команда. Можна: init / write / read / mirror / push / chain / status")
